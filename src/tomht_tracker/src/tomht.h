@@ -1,19 +1,25 @@
 #pragma once
 
+#include <vector>
+#include <Eigen/Core>
 
-namespace tomht
+#include "tree.h"
+
+class TOMHT
 {
+private:
+    Tree hypothesis_tree;
 
-    void spin(void);
+    std::vector<Eigen::Vector3d> y_vec;
 
-    struct Test
-    {
-        int test;
-    };
+    void gating(void);
+
+public:
+    TOMHT(/* args */);
+    ~TOMHT();
+    void update(std::vector<Eigen::Vector3d>);
+};
 
 
 
 
-
-
-} // namespace tohmt

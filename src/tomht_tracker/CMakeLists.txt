@@ -16,7 +16,7 @@ find_package(Eigen3 REQUIRED)
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
-add_executable(simulate src/simulate.cpp src/tomht.cpp)
+add_executable(simulate src/simulate.cpp src/tomht.cpp src/tree.cpp src/node.cpp src/target_hypothesis)
 target_include_directories(simulate PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 	$<INSTALL_INTERFACE:include>)
