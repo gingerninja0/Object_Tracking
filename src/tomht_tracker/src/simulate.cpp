@@ -23,23 +23,29 @@ int main(int argc, char * argv[])
     double rate = 10.0; // Frequency of the tracker/main loop
     rclcpp::Rate node_rate(rate);
 
+    TOMHT tomht;
 
     std::vector<Eigen::Vector3d> y_vec;
 
+    y_vec.push_back(Eigen::Vector3d(1, 0, 0));
+    y_vec.push_back(Eigen::Vector3d(1, 1, 0));
 
-    while (rclcpp::ok())
-    {
-        // Simulate measurements
-        y_vec.push_back(Eigen::Vector3d(sin(time*0.05), 0, 0));
-        y_vec.push_back(Eigen::Vector3d(1, cos(time*0.1), 0));
+    tomht.update(y_vec);
 
-        std::cout << time << std::endl;
-        print_vec(y_vec);
+    
+    // while (rclcpp::ok())
+    // {
+    //     // Simulate measurements
+    //     y_vec.push_back(Eigen::Vector3d(sin(time*0.05), 0, 0));
+    //     y_vec.push_back(Eigen::Vector3d(1, cos(time*0.1), 0));
+
+    //     std::cout << time << std::endl;
+    //     print_vec(y_vec);
         
-        time += 1.0/rate;
-        node_rate.sleep();
-        y_vec.clear();
-    }
+    //     time += 1.0/rate;
+    //     node_rate.sleep();
+    //     y_vec.clear();
+    // }
     
 
     return 0;

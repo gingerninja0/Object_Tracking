@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <Eigen/Core>
 #include <vector>
+#include <memory>
 
 #include "target_hypothesis.h"
 
@@ -19,15 +20,18 @@ private:
 
     Target_Hypothesis target;
 
-    std::vector<Node *> next; // Vector of nodes that attach to this node
-    Node * prev;
+    std::vector<std::unique_ptr<Node>> next; // Vector of nodes that attach to this node, unique because each element in the vector is a single node (no double ups)
+    std::shared_ptr<Node> prev; // shared because each next node will point back to the same previous node
 
 
 
 
 
 public:
-    Node(Eigen::Vector3d, uint32_t, uint32_t, Node *);
+    Node(Eigen::Vector3d, uint32_t, uint32_t, std::shared_ptr<Node>);   // For interior and leaf nodes
+    Node(Eigen::Vector3d, uint32_t, uint32_t, std::nullptr_t);          // For root nodes
     ~Node();
+
+    uint32_t get_target_id(void);
 };
 

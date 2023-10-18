@@ -84,6 +84,7 @@
         "typeinfo": "cpp",
         "variant": "cpp",
         "__nullptr": "cpp",
-        "core": "cpp"
+        "core": "cpp",
+        "__config": "cpp"
     }
 }

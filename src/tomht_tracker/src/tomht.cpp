@@ -4,6 +4,7 @@
 
 TOMHT::TOMHT(/* args */)
 {
+    hypothesis_tree = std::make_unique<Tree>();
 }
 
 TOMHT::~TOMHT()
@@ -16,14 +17,14 @@ void TOMHT::update(std::vector<Eigen::Vector3d> y_vec_)
     y_vec = y_vec_;
     std::cout << "TOMHT Spin!" << std::endl;
 
-    gating();
+    hypothesis_generation();
 
     // Steps required and some prerequisite code/classes
     /*
-    1. Gate measurements
+    0.5. Gate measurements, I tihnk I will do this inside of the hypothesis generation
         Mahalanobis distance and gating 
 
-    2. Hypothesis Generation
+    1. Hypothesis Generation
         Tree
         There will a tree for each target estimate where each leaf is a different measurement association at the current time step and each branch is a different hypothesis of associations
 
@@ -42,12 +43,43 @@ void TOMHT::update(std::vector<Eigen::Vector3d> y_vec_)
 
 }
 
-void TOMHT::gating(void)
+void TOMHT::hypothesis_generation(void)
 {
-    // Recursive function to find the Mahalnobis distance to each target hypothesis. This will add the Mahalnobis distance and the associated measurement into each leaf node of the tree.
-
+    // Make new target estimates
+    for (size_t i = 0; i < y_vec.size(); i++)
+    {
+        hypothesis_tree->add_target(y_vec[i], get_new_target_id(), i);
+    }
+    std::cout << "Size of used ids vector: " << used_target_ids.size() << std::endl;
 }
 
 
 
+uint32_t TOMHT::get_new_target_id(void)
+{
+    uint32_t id_candidate = 0;
+    // While the new id_candidate is within the used_ids list, find generate a new id_candidate
+    while (true)
+    {
+        bool success = true;
+        for (size_t i = 0; i < used_target_ids.size(); i++)
+        {
+            if (id_candidate == used_target_ids[i])
+            {
+                success = false;
+                break;
+            }
+        }
 
+        if (success)
+        {
+            break;
+        }
+
+        id_candidate++;
+    }
+
+    // Add id_candidate to used_ids list and return the new id (id_candidate)
+    used_target_ids.push_back(id_candidate);
+    return id_candidate;
+}
