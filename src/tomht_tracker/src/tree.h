@@ -17,6 +17,8 @@ public:
     // y, target_id, measurement_id
     void add_target(Eigen::Vector3d, uint32_t, uint32_t);
 
+    void correct(std::vector<Eigen::Vector3d>);
+
     void set_target_index_pointer(uint32_t);
 };
 

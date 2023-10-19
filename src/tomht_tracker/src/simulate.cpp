@@ -19,7 +19,7 @@ int main(int argc, char * argv[])
 {
     rclcpp::init(argc, argv);
 
-    double time = 0.0; // Tracks the time since the thread was started
+    // double time = 0.0; // Tracks the time since the thread was started
     double rate = 10.0; // Frequency of the tracker/main loop
     rclcpp::Rate node_rate(rate);
 
@@ -32,6 +32,10 @@ int main(int argc, char * argv[])
 
     tomht.update(y_vec);
 
+    y_vec.push_back(Eigen::Vector3d(1, 0, 0));
+    y_vec.push_back(Eigen::Vector3d(1, 1, 0));
+
+    tomht.update(y_vec);
     
     // while (rclcpp::ok())
     // {

@@ -45,12 +45,21 @@ void TOMHT::update(std::vector<Eigen::Vector3d> y_vec_)
 
 void TOMHT::hypothesis_generation(void)
 {
+    // Use measurements to correct any existing target estimates
+    std::cout << "Here 1" << std::endl;
+    hypothesis_tree->correct(y_vec);
+    std::cout << "Here 2" << std::endl;
+    
+
+
     // Make new target estimates
     for (size_t i = 0; i < y_vec.size(); i++)
     {
         hypothesis_tree->add_target(y_vec[i], get_new_target_id(), i);
     }
     std::cout << "Size of used ids vector: " << used_target_ids.size() << std::endl;
+
+
 }
 
 
