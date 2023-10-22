@@ -3,18 +3,19 @@
 #include <iostream>
 
 // Correct target estimate
-Node::Node(Eigen::Vector3d y_, Target_Hypothesis target_, uint32_t target_id_, uint32_t measurement_id_, std::shared_ptr<Node> prev_)
-    : target_id(target_id_), measurement_id(measurement_id_), prev(prev_)
+Node::Node(Eigen::Vector3d y_, Target_Hypothesis target_, uint32_t target_id_, uint32_t measurement_id_)
+    : target_id(target_id_), measurement_id(measurement_id_)
 {
     next.push_back(nullptr);
     // Correct the target estiamte with the measurement, or given a measurement it will add the node below the current node with the corrected state, not sure, up to future me
+    clutter = false;
 
-    target.correct(y_, target_); // This will probably turn into target.correct(y_)
+    target.correct(y_, target_);
 }
 
-// Generate new target estimate, this is the root node of a target hypothesis tree tree
-Node::Node(Eigen::Vector3d y_, uint32_t target_id_, uint32_t measurement_id_, std::nullptr_t prev_)
-    : target_id(target_id_), measurement_id(measurement_id_), prev(prev_)
+// Generate new target estimate, this is the root node of a target hypothesis tree tree or a clutter measurement.
+Node::Node(Eigen::Vector3d y_, uint32_t target_id_, uint32_t measurement_id_, bool clutter_)
+    : target_id(target_id_), measurement_id(measurement_id_), clutter(clutter_)
 {
     next.push_back(nullptr);
 
@@ -32,35 +33,157 @@ uint32_t Node::get_target_id(void)
     return target_id;
 }
 
-void Node::correct(Eigen::Vector3d y, uint32_t measurement_id_)
+uint32_t Node::tree_size(void)
 {
-    correct_recursive(y, measurement_id_);
+    return tree_size_recursive();
 }
 
-void Node::correct_recursive(Eigen::Vector3d y, uint32_t measurement_id_)
+uint32_t Node::tree_size_recursive(void)
 {
+    if (next.size() == 1)
+    {   
+        return 1;
+    }
+
+    uint32_t sum = 0;
+    for (size_t i = 0; i < next.size(); i++)
+    {
+        if (next[i] != nullptr)
+        {
+            sum += next[i]->tree_size_recursive();
+        }
+    }
+    return sum;
+}
+
+void Node::correct(Eigen::Vector3d y, uint32_t measurement_id_, std::vector<uint32_t> & associated_measurements)
+{
+    std::cout << "Recursive start" << std::endl;
+    correct_recursive(y, measurement_id_, associated_measurements);
+    std::cout << "Recursive end" << std::endl;
+
+}
+
+void Node::correct_recursive(Eigen::Vector3d y, uint32_t measurement_id_, std::vector<uint32_t> & associated_measurements)
+{
+    std::cout << "Recursive call, target_id: " << target_id << ", measurement_id: " << measurement_id_ << std::endl;
     measurement_id = measurement_id+0; // to prevent a warning (for now, can remove once measurement_id is used somewhere)
 
     if (next.size() == 1)
     {
-        std::cout << "correct_recursion_0" << std::endl;
+        // Add a leaf node, where the current target state is, perfom gating on this to determine which case to use
+        uint32_t gate = gating(y);
 
-        self = shared_from_this(); // Issue
+        if (gate <= 2)
+        {
+            associated_measurements.push_back(measurement_id_); // For case 1 and 2 no new targets will be spawned from associated measurements. Measurements not added to the associated_measurements will be used to spawn new targets (new tree in the tree vector)
+            
+            if (clutter)
+            {
+                // #NOTE1: This makes a new target from a previous clutter node
+                auto node = std::make_shared<Node>(y, target_id, measurement_id_, false); // If the current node is clutter, the target values will be spawned from this measurement
+                next.push_back(std::move(node));
+            }
+            else
+            {
+                auto node = std::make_shared<Node>(y, target, target_id, measurement_id_); // If the node is not clutter, correct the target state
+                next.push_back(std::move(node));
+            }
+            
+        }
 
-        std::cout << "correct_recursion_1" << std::endl;
-
-        auto node = std::make_shared<Node>(y, target, target_id, measurement_id_, self);
-
-        std::cout << "correct_recursion_2" << std::endl;
-
-        next.push_back(std::move(node));
+        if (gate == 2)
+        {
+            // Make a clutter measurement, no doing this yet
+            // Add the clutter to the vector of next as well, this will need a flag so that if the clutter is associated it knows to init the target estimate from the 
+            auto node = std::make_shared<Node>(y, target_id, measurement_id_, true); // Make a new clutter node, the target state will be initialised by the current measurement, although this will be overwritten if it is ever gated, see #NOTE1
+            next.push_back(std::move(node));
+        }
+        
         return;
     }
 
     for (size_t i = 0; i < next.size(); i++)
     {
-        next[i]->correct_recursive(y, measurement_id_);
+        if (next[i] != nullptr)
+        {
+            next[i]->correct_recursive(y, measurement_id_, associated_measurements);
+        }
     }
     
     
+}
+
+void Node::predict(void)
+{
+    predict_recursive();
+}
+
+void Node::predict_recursive(void)
+{
+    if (next.size() == 1)
+    {
+        target.predict();
+        
+        return;
+    }
+
+    for (size_t i = 0; i < next.size(); i++)
+    {
+        if (next[i] != nullptr)
+        {
+            next[i]->predict();
+        }
+    }
+}
+
+/*
+Case 1: Target correction only
+Case 2: Target correction and Clutter
+Case 3: Target correction, Clutter, Spawn
+Case 4: Spawn only
+*/
+uint32_t Node::gating(Eigen::Vector3d y)
+{
+    double dist = target.mahalanobis_distance(y);
+
+    // std::cout << "Target: \n" << target.get_pos() << std::endl;
+    // std::cout << "y: \n" << y << std::endl;
+    // std::cout << "mahalanobis_distance: " << dist << std::endl;
+
+    // These dont work well, ill do my own >:)
+    // if (dist >= GATE_997)
+    // {
+    //     return 1;
+    // }
+    // else if (dist >= GATE_95 && dist < GATE_997)
+    // {
+    //     return 2;
+    // }
+    // else if (dist >= GATE_68 && dist < GATE_95)
+    // {
+    //     return 3;
+    // }
+    // else
+    // {
+    //     return 4;
+    // }
+
+    if (dist < 0.2)
+    {
+        return 1;
+    }
+    else if (dist >= 0.2 && dist < 0.3)
+    {
+        return 2;
+    }
+    else if (dist >= 0.3 && dist < 0.5)
+    {
+        return 3;
+    }
+    else
+    {
+        return 4;
+    }
+
 }

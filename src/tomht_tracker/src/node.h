@@ -8,6 +8,11 @@
 
 #include "target_hypothesis.h"
 
+// These are for gating the mahalnobis distance, from chi2inv in MATLAB
+#define GATE_997 13.9314 // chi2inv(0.997, 3)
+#define GATE_95 7.8147   // chi2inv(0.95, 3)
+#define GATE_68 3.5059   // chi2inv(0.68, 3)
+
 class Node : public std::enable_shared_from_this<Node>
 {
 private:
@@ -16,7 +21,8 @@ private:
     uint32_t measurement_id;
 
     Eigen::Vector3d measurement;
-    // bool clutter; // Set to true if a clutter measurement, this will skip the measurement correction
+    
+    
 
     Target_Hypothesis target;
 
@@ -25,16 +31,25 @@ private:
 
     std::shared_ptr<Node> self;
 
-    void correct_recursive(Eigen::Vector3d, uint32_t); // The recursive function call to do the measurement correction
+    void correct_recursive(Eigen::Vector3d, uint32_t, std::vector<uint32_t> &); // The recursive function call to do the measurement correction
+    void predict_recursive(void);
 
+    uint32_t tree_size_recursive(void);
 
 public:
-    Node(Eigen::Vector3d, Target_Hypothesis, uint32_t, uint32_t, std::shared_ptr<Node>);   // For interior and leaf nodes
-    Node(Eigen::Vector3d, uint32_t, uint32_t, std::nullptr_t);          // For root nodes
+    Node(Eigen::Vector3d, Target_Hypothesis, uint32_t, uint32_t);   // For interior and leaf nodes
+    Node(Eigen::Vector3d, uint32_t, uint32_t, bool);          // For root nodes (Defined as clutter and stored in the tree vector)
     ~Node();
 
     uint32_t get_target_id(void);
 
-    void correct(Eigen::Vector3d, uint32_t);
+    void correct(Eigen::Vector3d, uint32_t, std::vector<uint32_t> &);
+    void predict(void);
+
+    uint32_t gating(Eigen::Vector3d); // Use the target
+
+    bool clutter; // Set to true if a clutter measurement, this will skip the measurement correction
+
+    uint32_t tree_size(void);
 };
 

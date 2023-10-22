@@ -46,20 +46,30 @@ void TOMHT::update(std::vector<Eigen::Vector3d> y_vec_)
 void TOMHT::hypothesis_generation(void)
 {
     // Use measurements to correct any existing target estimates
-    std::cout << "Here 1" << std::endl;
-    hypothesis_tree->correct(y_vec);
-    std::cout << "Here 2" << std::endl;
+    std::vector<uint32_t> associated_measurements;
+    hypothesis_tree->correct(y_vec, associated_measurements);
+    // std::cout << "Size of used ids vector (after correction): " << used_target_ids.size() << std::endl;
+    
+    // Find which measurements are unassociated 
+    
+    std::vector<uint32_t> measurement_indices(y_vec.size());
+    std::iota(measurement_indices.begin(), measurement_indices.end(), 0);
+    std::sort(associated_measurements.begin(), associated_measurements.end());
+
+    std::vector<uint32_t> unassociated_measurements;
+
+    std::set_difference(measurement_indices.begin(), measurement_indices.end(), associated_measurements.begin(), associated_measurements.end(), std::back_inserter(unassociated_measurements));
     
 
-
-    // Make new target estimates
-    for (size_t i = 0; i < y_vec.size(); i++)
+    // Make new target estimates from measurements that werent associated, or were ou
+    for (size_t i = 0; i < unassociated_measurements.size(); i++)
     {
-        hypothesis_tree->add_target(y_vec[i], get_new_target_id(), i);
+        hypothesis_tree->add_target(y_vec[unassociated_measurements[i]], get_new_target_id(), unassociated_measurements[i]);
     }
-    std::cout << "Size of used ids vector: " << used_target_ids.size() << std::endl;
+    // std::cout << "unassociated_measurements.size(): " << unassociated_measurements.size() << std::endl;
+    // std::cout << "Size of used ids vector (after spawning): " << used_target_ids.size() << std::endl;
 
-
+    hypothesis_tree->predict();
 }
 
 
