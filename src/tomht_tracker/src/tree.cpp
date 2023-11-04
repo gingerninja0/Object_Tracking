@@ -4,6 +4,7 @@
 
 Tree::Tree()
 {
+    node_id_counter = 0;
 }
 
 Tree::~Tree()
@@ -27,7 +28,7 @@ void Tree::correct(std::vector<Eigen::Vector3d> y_vec, std::vector<uint32_t> & a
         for (size_t i = 0; i < y_vec.size(); i++)
         {
             tree->correct(y_vec[i], i, associated_measurements);
-            // std::cout << "Tree: " << i << "   Size: " << tree->tree_size() << std::endl;
+            
         }
                 
     }
@@ -42,3 +43,18 @@ void Tree::predict(void)
     }
     
 }
+
+void Tree::print_size(void)
+{
+    uint32_t i = 0;
+    for (auto &tree : tree_vec)
+    {
+        
+        std::cout << "Tree: " << i << std::endl;
+        uint32_t depth = tree->tree_size(); 
+        std::cout << "Total number of nodes: " << depth << std::endl;
+
+        i++;
+    }
+}
+

@@ -64,12 +64,16 @@ void TOMHT::hypothesis_generation(void)
     // Make new target estimates from measurements that werent associated, or were ou
     for (size_t i = 0; i < unassociated_measurements.size(); i++)
     {
+        std::cout << "Add a target estimate" << std::endl;
         hypothesis_tree->add_target(y_vec[unassociated_measurements[i]], get_new_target_id(), unassociated_measurements[i]);
     }
     // std::cout << "unassociated_measurements.size(): " << unassociated_measurements.size() << std::endl;
     // std::cout << "Size of used ids vector (after spawning): " << used_target_ids.size() << std::endl;
 
     hypothesis_tree->predict();
+
+    hypothesis_tree->print_size();
+
 }
 
 

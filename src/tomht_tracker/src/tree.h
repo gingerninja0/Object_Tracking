@@ -10,6 +10,8 @@ private:
 
     uint32_t target_index_pointer;
 
+    uint32_t node_id_counter;
+
 public:
     Tree(/* args */);
     ~Tree();
@@ -22,6 +24,10 @@ public:
     void predict(void);
 
     void set_target_index_pointer(uint32_t);
+
+    void print_size(void);
+
+    
 };
 
 

@@ -6,7 +6,7 @@
 Node::Node(Eigen::Vector3d y_, Target_Hypothesis target_, uint32_t target_id_, uint32_t measurement_id_)
     : target_id(target_id_), measurement_id(measurement_id_)
 {
-    next.push_back(nullptr);
+    // next.push_back(nullptr);
     // Correct the target estiamte with the measurement, or given a measurement it will add the node below the current node with the corrected state, not sure, up to future me
     clutter = false;
 
@@ -17,7 +17,7 @@ Node::Node(Eigen::Vector3d y_, Target_Hypothesis target_, uint32_t target_id_, u
 Node::Node(Eigen::Vector3d y_, uint32_t target_id_, uint32_t measurement_id_, bool clutter_)
     : target_id(target_id_), measurement_id(measurement_id_), clutter(clutter_)
 {
-    next.push_back(nullptr);
+    // next.push_back(nullptr);
 
     // Initialise a target from the measurement
     target.init(y_);
@@ -40,20 +40,24 @@ uint32_t Node::tree_size(void)
 
 uint32_t Node::tree_size_recursive(void)
 {
-    if (next.size() == 1)
+
+    if (next.empty())
     {   
+        std::cout << "Size of Next vector: " << next.size() << std::endl;
         return 1;
     }
-
+    
     uint32_t sum = 0;
     for (size_t i = 0; i < next.size(); i++)
     {
-        if (next[i] != nullptr)
-        {
-            sum += next[i]->tree_size_recursive();
-        }
+
+        std::cout << "Size of Next vector: " << next.size() << std::endl;
+        
+        sum += next[i]->tree_size_recursive();
     }
+
     return sum;
+
 }
 
 void Node::correct(Eigen::Vector3d y, uint32_t measurement_id_, std::vector<uint32_t> & associated_measurements)
@@ -69,15 +73,16 @@ void Node::correct_recursive(Eigen::Vector3d y, uint32_t measurement_id_, std::v
     std::cout << "Recursive call, target_id: " << target_id << ", measurement_id: " << measurement_id_ << std::endl;
     measurement_id = measurement_id+0; // to prevent a warning (for now, can remove once measurement_id is used somewhere)
 
-    if (next.size() == 1)
+    if (next.empty())
     {
         // Add a leaf node, where the current target state is, perfom gating on this to determine which case to use
         uint32_t gate = gating(y);
+        std::cout << "Gate: " << gate << std::endl;
 
-        if (gate <= 2)
+        switch (gate)
         {
-            associated_measurements.push_back(measurement_id_); // For case 1 and 2 no new targets will be spawned from associated measurements. Measurements not added to the associated_measurements will be used to spawn new targets (new tree in the tree vector)
-            
+        case 1:
+            associated_measurements.push_back(measurement_id_);
             if (clutter)
             {
                 // #NOTE1: This makes a new target from a previous clutter node
@@ -89,15 +94,52 @@ void Node::correct_recursive(Eigen::Vector3d y, uint32_t measurement_id_, std::v
                 auto node = std::make_shared<Node>(y, target, target_id, measurement_id_); // If the node is not clutter, correct the target state
                 next.push_back(std::move(node));
             }
-            
-        }
+            break;
 
-        if (gate == 2)
+        case 2:
         {
-            // Make a clutter measurement, no doing this yet
-            // Add the clutter to the vector of next as well, this will need a flag so that if the clutter is associated it knows to init the target estimate from the 
+            associated_measurements.push_back(measurement_id_);
+            if (clutter)
+            {
+                // #NOTE1: This makes a new target from a previous clutter node
+                auto node = std::make_shared<Node>(y, target_id, measurement_id_, false); // If the current node is clutter, the target values will be spawned from this measurement
+                next.push_back(std::move(node));
+            }
+            else
+            {
+                auto node = std::make_shared<Node>(y, target, target_id, measurement_id_); // If the node is not clutter, correct the target state
+                next.push_back(std::move(node));
+            }
+            // Add the clutter to the vector of next as well
             auto node = std::make_shared<Node>(y, target_id, measurement_id_, true); // Make a new clutter node, the target state will be initialised by the current measurement, although this will be overwritten if it is ever gated, see #NOTE1
             next.push_back(std::move(node));
+            break;
+        }
+        case 3:
+        {
+            if (clutter)
+            {
+                // #NOTE1: This makes a new target from a previous clutter node
+                auto node = std::make_shared<Node>(y, target_id, measurement_id_, false); // If the current node is clutter, the target values will be spawned from this measurement
+                next.push_back(std::move(node));
+            }
+            else
+            {
+                auto node = std::make_shared<Node>(y, target, target_id, measurement_id_); // If the node is not clutter, correct the target state
+                next.push_back(std::move(node));
+            }
+            // Add the clutter to the vector of next as well
+            auto node = std::make_shared<Node>(y, target_id, measurement_id_, true); // Make a new clutter node, the target state will be initialised by the current measurement, although this will be overwritten if it is ever gated, see #NOTE1
+            next.push_back(std::move(node));
+            break;
+        }
+        case 4:
+            // Case 4 is spawn only, this involves not adding the measurement to the associated_measurements vector
+            break;
+
+        default:
+            std::cerr << "Invalid gate case" << std::endl;
+
         }
         
         return;
@@ -105,10 +147,9 @@ void Node::correct_recursive(Eigen::Vector3d y, uint32_t measurement_id_, std::v
 
     for (size_t i = 0; i < next.size(); i++)
     {
-        if (next[i] != nullptr)
-        {
-            next[i]->correct_recursive(y, measurement_id_, associated_measurements);
-        }
+
+        next[i]->correct_recursive(y, measurement_id_, associated_measurements);
+        
     }
     
     
