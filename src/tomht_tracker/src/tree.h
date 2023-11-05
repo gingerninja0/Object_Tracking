@@ -12,6 +12,8 @@ private:
 
     uint32_t node_id_counter;
 
+    uint32_t depth;
+
 public:
     Tree(/* args */);
     ~Tree();

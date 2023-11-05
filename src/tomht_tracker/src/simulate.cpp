@@ -36,14 +36,14 @@ int main(int argc, char * argv[])
     std::cout << "\n\nUpdate 1\n" << std::endl << std::endl;
     tomht.update(y_vec);
 
-    y_vec.clear();
-    y_vec.push_back(Eigen::Vector3d(1.7, 0, 0));
+    // y_vec.clear();
+    // y_vec.push_back(Eigen::Vector3d(1.7, 0, 0));
 
     std::cout << "\n\nUpdate 2\n" << std::endl << std::endl;
     tomht.update(y_vec);
 
-    y_vec.clear();
-    y_vec.push_back(Eigen::Vector3d(2.3, 0, 0));
+    // y_vec.clear();
+    y_vec.push_back(Eigen::Vector3d(1.1, 0, 0));
 
     std::cout << "\n\nUpdate 3\n" << std::endl << std::endl;
     tomht.update(y_vec);

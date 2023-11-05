@@ -21,8 +21,8 @@ private:
     uint32_t measurement_id;
 
     Eigen::Vector3d measurement;
-    
-    
+
+    uint32_t depth;    
 
     Target_Hypothesis target;
 
@@ -34,11 +34,14 @@ private:
     void correct_recursive(Eigen::Vector3d, uint32_t, std::vector<uint32_t> &); // The recursive function call to do the measurement correction
     void predict_recursive(void);
 
-    uint32_t tree_size_recursive(void);
+    void tree_size_recursive(uint32_t &);
 
 public:
     Node(Eigen::Vector3d, Target_Hypothesis, uint32_t, uint32_t);   // For interior and leaf nodes
     Node(Eigen::Vector3d, uint32_t, uint32_t, bool);          // For root nodes (Defined as clutter and stored in the tree vector)
+
+    void add_node(Eigen::Vector3d, Target_Hypothesis, uint32_t, uint32_t, bool);
+
     ~Node();
 
     uint32_t get_target_id(void);
@@ -51,5 +54,7 @@ public:
     bool clutter; // Set to true if a clutter measurement, this will skip the measurement correction
 
     uint32_t tree_size(void);
-};
 
+
+
+};

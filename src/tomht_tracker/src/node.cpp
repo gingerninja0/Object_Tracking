@@ -35,28 +35,27 @@ uint32_t Node::get_target_id(void)
 
 uint32_t Node::tree_size(void)
 {
-    return tree_size_recursive();
+    uint32_t sum = 1;
+    tree_size_recursive(sum);
+    return sum;
 }
 
-uint32_t Node::tree_size_recursive(void)
+void Node::tree_size_recursive(uint32_t & sum)
 {
-
+    std::cout << "Size of Next vector: " << next.size() << std::endl;
     if (next.empty())
     {   
-        std::cout << "Size of Next vector: " << next.size() << std::endl;
-        return 1;
+        // sum++;
+        return;
     }
     
-    uint32_t sum = 0;
     for (size_t i = 0; i < next.size(); i++)
     {
 
-        std::cout << "Size of Next vector: " << next.size() << std::endl;
-        
-        sum += next[i]->tree_size_recursive();
+        // std::cout << "Size of Next vector: " << next.size() << std::endl;
+        sum++;
+        next[i]->tree_size_recursive(sum);
     }
-
-    return sum;
 
 }
 
@@ -79,70 +78,35 @@ void Node::correct_recursive(Eigen::Vector3d y, uint32_t measurement_id_, std::v
         uint32_t gate = gating(y);
         std::cout << "Gate: " << gate << std::endl;
 
+        // This should be able to replace the above switch-case but it doesnt match, NEED TO INVESTIGATE AND FIX
         switch (gate)
         {
         case 1:
             associated_measurements.push_back(measurement_id_);
-            if (clutter)
-            {
-                // #NOTE1: This makes a new target from a previous clutter node
-                auto node = std::make_shared<Node>(y, target_id, measurement_id_, false); // If the current node is clutter, the target values will be spawned from this measurement
-                next.push_back(std::move(node));
-            }
-            else
-            {
-                auto node = std::make_shared<Node>(y, target, target_id, measurement_id_); // If the node is not clutter, correct the target state
-                next.push_back(std::move(node));
-            }
+            add_node(y, target, target_id, measurement_id, false); // Target correction
             break;
 
         case 2:
-        {
             associated_measurements.push_back(measurement_id_);
-            if (clutter)
-            {
-                // #NOTE1: This makes a new target from a previous clutter node
-                auto node = std::make_shared<Node>(y, target_id, measurement_id_, false); // If the current node is clutter, the target values will be spawned from this measurement
-                next.push_back(std::move(node));
-            }
-            else
-            {
-                auto node = std::make_shared<Node>(y, target, target_id, measurement_id_); // If the node is not clutter, correct the target state
-                next.push_back(std::move(node));
-            }
-            // Add the clutter to the vector of next as well
-            auto node = std::make_shared<Node>(y, target_id, measurement_id_, true); // Make a new clutter node, the target state will be initialised by the current measurement, although this will be overwritten if it is ever gated, see #NOTE1
-            next.push_back(std::move(node));
+            add_node(y, target, target_id, measurement_id, false); // Target correction
+            add_node(y, target, target_id, measurement_id, true);  // Add clutter 
             break;
-        }
+        
         case 3:
-        {
-            if (clutter)
-            {
-                // #NOTE1: This makes a new target from a previous clutter node
-                auto node = std::make_shared<Node>(y, target_id, measurement_id_, false); // If the current node is clutter, the target values will be spawned from this measurement
-                next.push_back(std::move(node));
-            }
-            else
-            {
-                auto node = std::make_shared<Node>(y, target, target_id, measurement_id_); // If the node is not clutter, correct the target state
-                next.push_back(std::move(node));
-            }
-            // Add the clutter to the vector of next as well
-            auto node = std::make_shared<Node>(y, target_id, measurement_id_, true); // Make a new clutter node, the target state will be initialised by the current measurement, although this will be overwritten if it is ever gated, see #NOTE1
-            next.push_back(std::move(node));
+            add_node(y, target, target_id, measurement_id, false); // Target correction
+            add_node(y, target, target_id, measurement_id, true);  // Add clutter 
             break;
-        }
+        
         case 4:
             // Case 4 is spawn only, this involves not adding the measurement to the associated_measurements vector
             break;
 
         default:
             std::cerr << "Invalid gate case" << std::endl;
-
         }
         
         return;
+        
     }
 
     for (size_t i = 0; i < next.size(); i++)
@@ -153,6 +117,29 @@ void Node::correct_recursive(Eigen::Vector3d y, uint32_t measurement_id_, std::v
     }
     
     
+}
+
+void Node::add_node(Eigen::Vector3d y, Target_Hypothesis target, uint32_t target_id, uint32_t measurement_id, bool clutter_flag)
+{
+    if (clutter_flag)
+    {
+        auto node = std::make_shared<Node>(y, target_id, measurement_id, clutter_flag); // If the current node is clutter, the target values will be spawned from this measurement
+        next.push_back(std::move(node));
+        return;
+    }
+
+    if (clutter)
+    {
+        // #NOTE1: This makes a new target from a previous clutter node
+        auto node = std::make_shared<Node>(y, target_id, measurement_id, clutter_flag); // If the current node is clutter, the target values will be spawned from this measurement
+        next.push_back(std::move(node));
+    }
+    else
+    {
+        auto node = std::make_shared<Node>(y, target, target_id, measurement_id); // If the node is not clutter, correct the target state
+        next.push_back(std::move(node));
+    }
+
 }
 
 void Node::predict(void)
