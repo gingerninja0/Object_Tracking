@@ -3,6 +3,14 @@
 #include <memory>
 #include "node.h"
 
+#define MAX_TREE_DEPTH 5
+
+struct Layer
+{
+    std::vector<Node> nodes;
+};
+
+
 class Tree
 {
 private:
@@ -12,10 +20,13 @@ private:
 
     uint32_t depth;
 
+    std::vector<Layer> layer;
+
 public:
-    Tree();
+    Tree(Eigen::Vector3d);
     ~Tree();
 
+    void expand(std::vector<Eigen::Vector3d>, std::vector<uint32_t> &);
 
 };
 

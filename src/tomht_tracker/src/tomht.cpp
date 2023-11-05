@@ -4,7 +4,7 @@
 
 TOMHT::TOMHT(/* args */)
 {
-    hypothesis_tree = std::make_unique<std::vector<Tree>>();
+    hypothesis_tree = std::make_unique<std::vector<std::unique_ptr<Tree>>>();
 }
 
 TOMHT::~TOMHT()
@@ -45,7 +45,30 @@ void TOMHT::update(std::vector<Eigen::Vector3d> y_vec_)
 
 void TOMHT::hypothesis_generation(void)
 {
+    // std::cout << "Number of trees: " << hypothesis_tree->size() << std::endl;
 
+    std::vector<uint32_t> associated_measurements; // Vector of measurements that have already be associated to target estimates, no need to spawn new target hypotheses from these
+
+    for (auto &tree : *hypothesis_tree)
+    {
+        tree->expand(y_vec, associated_measurements);
+    }
+    
+    // Make new trees from measurements with no existing associations
+
+    std::vector<uint32_t> measurement_indices(y_vec.size());
+    std::iota(measurement_indices.begin(), measurement_indices.end(), 0);
+    std::sort(associated_measurements.begin(), associated_measurements.end());
+
+    std::vector<uint32_t> unassociated_measurements;
+
+    std::set_difference(measurement_indices.begin(), measurement_indices.end(), associated_measurements.begin(), associated_measurements.end(), std::back_inserter(unassociated_measurements));
+
+    for (size_t i = 0; i < unassociated_measurements.size(); i++)
+    {
+        hypothesis_tree->push_back(std::make_unique<Tree>(y_vec[unassociated_measurements[i]]));
+    }
+    
 
 }
 

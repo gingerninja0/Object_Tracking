@@ -11,7 +11,10 @@
 class TOMHT
 {
 private:
-    std::unique_ptr<std::vector<Tree>> hypothesis_tree;
+
+    std::unique_ptr<std::vector<std::unique_ptr<Tree>>> hypothesis_tree;
+
+    
 
     std::vector<Eigen::Vector3d> y_vec;
 
